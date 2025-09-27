@@ -1,0 +1,1685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Floor Plan Designer</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            overflow: hidden;
+        }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header styles */
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        .btn-success {
+            background-color: #2ecc71;
+        }
+
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+
+        /* Main content area */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar styles */
+        .sidebar {
+            width: 300px;
+            background-color: #ecf0f1;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+            border-right: 1px solid #bdc3c7;
+        }
+
+        .section {
+            background-color: white;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        /* Tools section */
+        .tools {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .tool-btn {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover {
+            background-color: #e9ecef;
+        }
+
+        .tool-btn.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #2980b9;
+        }
+
+        /* Toggles section */
+        .toggles {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toggle-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toggle-label {
+            font-size: 0.9rem;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #3498db;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Items palette */
+        .items-palette {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: grab;
+            background-color: #f8f9fa;
+            transition: all 0.2s;
+        }
+
+        .item:hover {
+            background-color: #e9ecef;
+            transform: translateY(-2px);
+        }
+
+        .item-icon {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 5px;
+        }
+
+        .item-name {
+            font-size: 0.7rem;
+            text-align: center;
+        }
+
+        /* Canvas area */
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background-color: #f8f9fa;
+        }
+
+        #canvas {
+            display: block;
+            background-color: white;
+            cursor: crosshair;
+        }
+
+        /* Instructions modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+
+        .instructions-list {
+            list-style-type: none;
+        }
+
+        .instructions-list li {
+            margin-bottom: 10px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .instructions-list li:before {
+            content: "•";
+            color: #3498db;
+            position: absolute;
+            left: 0;
+        }
+
+        /* Status bar */
+        .status-bar {
+            background-color: #34495e;
+            color: white;
+            padding: 5px 15px;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Selection handles */
+        .selection-handle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #3498db;
+            border: 1px solid white;
+            border-radius: 50%;
+            pointer-events: all;
+            cursor: pointer;
+        }
+
+        .rotate-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #e74c3c;
+            border: 1px solid white;
+            border-radius: 50%;
+            pointer-events: all;
+            cursor: grab;
+        }
+
+        /* Category tabs */
+        .category-tabs {
+            display: flex;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .category-tab {
+            padding: 8px 12px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .category-tab.active {
+            border-bottom: 2px solid #3498db;
+            color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header>
+            <h1>My Floor My Designer</h1>
+            <div class="controls">
+                <button id="newBtn" class="btn">New</button>
+                <button id="clearBtn" class="btn btn-danger">Clear</button>
+                <button id="saveBtn" class="btn btn-success">Save</button>
+                <button id="loadBtn" class="btn">Load</button>
+                <button id="exportJsonBtn" class="btn">Export JSON</button>
+                <button id="exportPngBtn" class="btn">Export PNG</button>
+                <button id="undoBtn" class="btn">Undo</button>
+                <button id="redoBtn" class="btn">Redo</button>
+                <button id="instructionsBtn" class="btn">Instructions</button>
+            </div>
+        </header>
+
+        <!-- Main content -->
+        <div class="main-content">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="section">
+                    <h2>Tools</h2>
+                    <div class="tools">
+                        <button id="selectTool" class="tool-btn active">Select/Move</button>
+                        <button id="wallTool" class="tool-btn">Draw Wall</button>
+                        <button id="rotateTool" class="tool-btn">Rotate</button>
+                        <button id="placeItemTool" class="tool-btn">Place Item</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Settings</h2>
+                    <div class="toggles">
+                        <div class="toggle-item">
+                            <span class="toggle-label">Show Grid</span>
+                            <label class="switch">
+                                <input type="checkbox" id="gridToggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-item">
+                            <span class="toggle-label">Snap to Grid</span>
+                            <label class="switch">
+                                <input type="checkbox" id="snapToggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Items</h2>
+                    <div class="category-tabs">
+                        <button class="category-tab active" data-category="furniture">Furniture</button>
+                        <button class="category-tab" data-category="kitchen">Kitchen</button>
+                        <button class="category-tab" data-category="restaurant">Restaurant</button>
+                    </div>
+                    <div class="items-palette">
+                        <!-- Furniture Items -->
+                        <div class="item" data-type="chair" data-category="furniture">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="20" y="60" width="60" height="10" fill="#8e44ad"/>
+                                    <rect x="25" y="30" width="10" height="30" fill="#8e44ad"/>
+                                    <rect x="65" y="30" width="10" height="30" fill="#8e44ad"/>
+                                    <rect x="20" y="20" width="60" height="10" fill="#9b59b6"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Chair</span>
+                        </div>
+                        <div class="item" data-type="table" data-category="furniture">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="10" y="70" width="80" height="10" fill="#d35400"/>
+                                    <rect x="25" y="30" width="10" height="40" fill="#d35400"/>
+                                    <rect x="65" y="30" width="10" height="40" fill="#d35400"/>
+                                    <rect x="10" y="20" width="80" height="10" fill="#e67e22"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Table</span>
+                        </div>
+                        <div class="item" data-type="sofa" data-category="furniture">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="10" y="60" width="80" height="10" fill="#16a085"/>
+                                    <rect x="10" y="30" width="80" height="30" fill="#1abc9c"/>
+                                    <rect x="10" y="20" width="80" height="10" fill="#1abc9c"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Sofa</span>
+                        </div>
+                        <div class="item" data-type="bed" data-category="furniture">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="10" y="40" width="80" height="40" fill="#2980b9"/>
+                                    <rect x="10" y="30" width="80" height="10" fill="#3498db"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Bed</span>
+                        </div>
+                        <div class="item" data-type="door" data-category="furniture">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="40" y="10" width="20" height="80" fill="#7f8c8d"/>
+                                    <circle cx="50" cy="20" r="5" fill="#95a5a6"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Door</span>
+                        </div>
+                        <div class="item" data-type="window" data-category="furniture">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="20" y="30" width="60" height="40" fill="#bdc3c7" stroke="#7f8c8d" stroke-width="3"/>
+                                    <line x1="50" y1="30" x2="50" y2="70" stroke="#7f8c8d" stroke-width="2"/>
+                                    <line x1="20" y1="50" x2="80" y2="50" stroke="#7f8c8d" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Window</span>
+                        </div>
+                        <div class="item" data-type="plant" data-category="furniture">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="45" y="60" width="10" height="30" fill="#8b4513"/>
+                                    <circle cx="50" cy="40" r="25" fill="#27ae60"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Plant</span>
+                        </div>
+                        <div class="item" data-type="bookshelf" data-category="furniture">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="10" y="20" width="80" height="60" fill="#8B4513" stroke="#654321" stroke-width="2"/>
+                                    <line x1="10" y1="40" x2="90" y2="40" stroke="#654321" stroke-width="2"/>
+                                    <line x1="10" y1="60" x2="90" y2="60" stroke="#654321" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Bookshelf</span>
+                        </div>
+                        <div class="item" data-type="desk" data-category="furniture">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="10" y="60" width="80" height="10" fill="#A0522D"/>
+                                    <rect x="20" y="30" width="10" height="30" fill="#8B4513"/>
+                                    <rect x="70" y="30" width="10" height="30" fill="#8B4513"/>
+                                    <rect x="10" y="20" width="80" height="10" fill="#CD853F"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Desk</span>
+                        </div>
+
+                        <!-- Kitchen Items -->
+                        <div class="item" data-type="stove" data-category="kitchen">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="10" y="10" width="80" height="60" fill="#333" stroke="#666" stroke-width="2"/>
+                                    <rect x="20" y="20" width="20" height="20" fill="#ccc"/>
+                                    <rect x="60" y="20" width="20" height="20" fill="#ccc"/>
+                                    <rect x="20" y="50" width="60" height="10" fill="#666"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Stove</span>
+                        </div>
+                        <div class="item" data-type="refrigerator" data-category="kitchen">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="10" y="10" width="80" height="80" fill="#ddd" stroke="#999" stroke-width="2"/>
+                                    <line x1="50" y1="10" x2="50" y2="90" stroke="#999" stroke-width="2"/>
+                                    <circle cx="70" cy="25" r="5" fill="#666"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Refrigerator</span>
+                        </div>
+                        <div class="item" data-type="sink" data-category="kitchen">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="20" y="30" width="60" height="40" fill="#ccc" stroke="#999" stroke-width="2"/>
+                                    <circle cx="40" cy="50" r="8" fill="#666"/>
+                                    <circle cx="60" cy="50" r="8" fill="#666"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Sink</span>
+                        </div>
+                        <div class="item" data-type="oven" data-category="kitchen">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="15" y="15" width="70" height="70" fill="#555" stroke="#333" stroke-width="2"/>
+                                    <rect x="25" y="25" width="50" height="30" fill="#222"/>
+                                    <circle cx="50" cy="65" r="8" fill="#999"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Oven</span>
+                        </div>
+                        <div class="item" data-type="microwave" data-category="kitchen">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="20" y="20" width="60" height="40" fill="#aaa" stroke="#777" stroke-width="2"/>
+                                    <rect x="30" y="30" width="40" height="20" fill="#333"/>
+                                    <circle cx="40" cy="40" r="3" fill="#fff"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Microwave</span>
+                        </div>
+                        <div class="item" data-type="dishwasher" data-category="kitchen">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="15" y="15" width="70" height="70" fill="#eee" stroke="#999" stroke-width="2"/>
+                                    <rect x="25" y="25" width="50" height="40" fill="#ccc"/>
+                                    <circle cx="50" cy="70" r="5" fill="#666"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Dishwasher</span>
+                        </div>
+                        <div class="item" data-type="cabinet" data-category="kitchen">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="15" y="15" width="70" height="70" fill="#8B4513" stroke="#654321" stroke-width="2"/>
+                                    <line x1="15" y1="40" x2="85" y2="40" stroke="#654321" stroke-width="2"/>
+                                    <circle cx="30" cy="28" r="3" fill="#654321"/>
+                                    <circle cx="70" cy="28" r="3" fill="#654321"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Cabinet</span>
+                        </div>
+                        <div class="item" data-type="counter" data-category="kitchen">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="10" y="40" width="80" height="20" fill="#CD853F" stroke="#8B4513" stroke-width="2"/>
+                                    <rect x="10" y="60" width="80" height="10" fill="#8B4513"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Counter</span>
+                        </div>
+                        <div class="item" data-type="toaster" data-category="kitchen">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="30" y="30" width="40" height="30" fill="#ccc" stroke="#999" stroke-width="2"/>
+                                    <rect x="35" y="35" width="30" height="5" fill="#666"/>
+                                    <rect x="35" y="45" width="30" height="5" fill="#666"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Toaster</span>
+                        </div>
+                        <div class="item" data-type="blender" data-category="kitchen">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="35" y="20" width="30" height="50" fill="#555" stroke="#333" stroke-width="2"/>
+                                    <rect x="40" y="70" width="20" height="10" fill="#777"/>
+                                    <circle cx="50" cy="35" r="8" fill="#999"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Blender</span>
+                        </div>
+
+                        <!-- Restaurant Items -->
+                        <div class="item" data-type="bar" data-category="restaurant">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="10" y="40" width="80" height="20" fill="#8B4513" stroke="#654321" stroke-width="2"/>
+                                    <rect x="10" y="60" width="80" height="10" fill="#654321"/>
+                                    <rect x="20" y="20" width="60" height="20" fill="#CD853F"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Bar Counter</span>
+                        </div>
+                        <div class="item" data-type="barstool" data-category="restaurant">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <circle cx="50" cy="35" r="15" fill="#8e44ad"/>
+                                    <rect x="45" y="35" width="10" height="35" fill="#8e44ad"/>
+                                    <rect x="40" y="70" width="20" height="5" fill="#8e44ad"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Barstool</span>
+                        </div>
+                        <div class="item" data-type="cashregister" data-category="restaurant">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="20" y="20" width="60" height="40" fill="#333" stroke="#666" stroke-width="2"/>
+                                    <rect x="30" y="30" width="40" height="20" fill="#000"/>
+                                    <rect x="35" y="35" width="30" height="10" fill="#0f0"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Cash Register</span>
+                        </div>
+                        <div class="item" data-type="hoststand" data-category="restaurant">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="30" y="20" width="40" height="50" fill="#8B4513" stroke="#654321" stroke-width="2"/>
+                                    <rect x="35" y="25" width="30" height="30" fill="#CD853F"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Host Stand</span>
+                        </div>
+                        <div class="item" data-type="waitstation" data-category="restaurant">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="20" y="30" width="60" height="40" fill="#ccc" stroke="#999" stroke-width="2"/>
+                                    <rect x="25" y="35" width="50" height="10" fill="#666"/>
+                                    <rect x="25" y="50" width="50" height="10" fill="#666"/>
+                                    <rect x="25" y="65" width="50" height="10" fill="#666"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Wait Station</span>
+                        </div>
+                        <div class="item" data-type="commercialfridge" data-category="restaurant">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="10" y="10" width="80" height="80" fill="#ddd" stroke="#999" stroke-width="2"/>
+                                    <line x1="10" y1="40" x2="90" y2="40" stroke="#999" stroke-width="2"/>
+                                    <line x1="10" y1="70" x2="90" y2="70" stroke="#999" stroke-width="2"/>
+                                    <circle cx="70" cy="25" r="5" fill="#666"/>
+                                    <circle cx="70" cy="55" r="5" fill="#666"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Commercial Fridge</span>
+                        </div>
+                        <div class="item" data-type="grill" data-category="restaurant">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="15" y="20" width="70" height="50" fill="#333" stroke="#666" stroke-width="2"/>
+                                    <rect x="20" y="25" width="60" height="10" fill="#ff4500"/>
+                                    <rect x="20" y="40" width="60" height="10" fill="#ff4500"/>
+                                    <rect x="20" y="55" width="60" height="10" fill="#ff4500"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Grill</span>
+                        </div>
+                        <div class="item" data-type="fryer" data-category="restaurant">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="25" y="30" width="50" height="40" fill="#555" stroke="#333" stroke-width="2"/>
+                                    <rect x="30" y="35" width="40" height="20" fill="#ff8c00"/>
+                                    <circle cx="50" cy="65" r="5" fill="#666"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Fryer</span>
+                        </div>
+                        <div class="item" data-type="prepstation" data-category="restaurant">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="15" y="30" width="70" height="40" fill="#CD853F" stroke="#8B4513" stroke-width="2"/>
+                                    <rect x="20" y="35" width="60" height="10" fill="#8B4513"/>
+                                    <rect x="20" y="50" width="60" height="10" fill="#8B4513"/>
+                                    <rect x="20" y="65" width="60" height="10" fill="#8B4513"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Prep Station</span>
+                        </div>
+                        <div class="item" data-type="displaycase" data-category="restaurant">
+                            <div class="item-icon">
+                                <svg viewBox="0 0 100 100">
+                                    <rect x="15" y="20" width="70" height="50" fill="#e6f2ff" stroke="#99ccff" stroke-width="2"/>
+                                    <rect x="20" y="25" width="60" height="40" fill="#fff" stroke="#99ccff" stroke-width="1"/>
+                                </svg>
+                            </div>
+                            <span class="item-name">Display Case</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas area -->
+            <div class="canvas-container">
+                <canvas id="canvas"></canvas>
+            </div>
+        </div>
+
+        <!-- Status bar -->
+        <div class="status-bar">
+            <span id="status">Ready</span>
+            <span>Tool: <span id="currentTool">Select/Move</span></span>
+        </div>
+
+        <!-- Instructions modal -->
+        <div id="instructionsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Enhanced Floor Plan Designer Instructions</h2>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <ul class="instructions-list">
+                    <li><strong>Select/Move Tool:</strong> Click to select items, drag to move them.</li>
+                    <li><strong>Draw Wall Tool:</strong> Click and drag to draw straight wall segments.</li>
+                    <li><strong>Rotate Tool:</strong> Select an item and use the rotate handle or press 'R' to rotate.</li>
+                    <li><strong>Place Item Tool:</strong> Click on the canvas to place the selected item.</li>
+                    <li><strong>Items Palette:</strong> Use the category tabs to browse different item types. Drag items from the palette onto the canvas.</li>
+                    <li><strong>Grid Toggle:</strong> Show or hide the grid for precise placement.</li>
+                    <li><strong>Snap to Grid:</strong> Enable/disable snapping items to the grid.</li>
+                    <li><strong>Keyboard Shortcuts:</strong>
+                        <ul>
+                            <li>Delete/Backspace: Remove selected item</li>
+                            <li>R: Rotate selected item</li>
+                            <li>Ctrl+Z: Undo</li>
+                            <li>Ctrl+Y: Redo</li>
+                        </ul>
+                    </li>
+                    <li><strong>Save/Load:</strong> Save your design to browser storage or load a previous one.</li>
+                    <li><strong>Export:</strong> Export your design as JSON data or as a PNG image.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Main application class
+        class FloorPlanDesigner {
+            constructor() {
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                // Application state
+                this.state = {
+                    tool: 'select', // Current tool: 'select', 'wall', 'rotate', 'placeItem'
+                    showGrid: true,
+                    snapToGrid: true,
+                    gridSize: 20,
+                    items: [], // All placed items
+                    walls: [], // All wall segments
+                    selectedItem: null, // Currently selected item
+                    isDragging: false,
+                    dragStart: { x: 0, y: 0 },
+                    isDrawingWall: false,
+                    wallStart: { x: 0, y: 0 },
+                    currentItemType: null, // Type of item to place
+                    history: [], // Undo/redo history
+                    historyIndex: -1, // Current position in history
+                    currentCategory: 'furniture' // Current item category
+                };
+                
+                // Initialize the application
+                this.init();
+            }
+            
+            // Initialize the application
+            init() {
+                this.setupCanvas();
+                this.setupEventListeners();
+                this.setupUI();
+                this.render();
+            }
+            
+            // Set up the canvas with proper sizing
+            setupCanvas() {
+                this.resizeCanvas();
+                window.addEventListener('resize', () => {
+                    this.resizeCanvas();
+                    this.render();
+                });
+            }
+            
+            // Resize the canvas to fit the window
+            resizeCanvas() {
+                const container = this.canvas.parentElement;
+                this.canvas.width = container.clientWidth;
+                this.canvas.height = container.clientHeight;
+            }
+            
+            // Set up event listeners for user interactions
+            setupEventListeners() {
+                // Canvas events
+                this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+                this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+                this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+                
+                // Keyboard events
+                document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+                
+                // Prevent default drag behaviors
+                this.canvas.addEventListener('dragstart', (e) => e.preventDefault());
+                this.canvas.addEventListener('drop', (e) => e.preventDefault());
+                this.canvas.addEventListener('dragover', (e) => e.preventDefault());
+            }
+            
+            // Set up UI event listeners
+            setupUI() {
+                // Tool buttons
+                document.getElementById('selectTool').addEventListener('click', () => this.setTool('select'));
+                document.getElementById('wallTool').addEventListener('click', () => this.setTool('wall'));
+                document.getElementById('rotateTool').addEventListener('click', () => this.setTool('rotate'));
+                document.getElementById('placeItemTool').addEventListener('click', () => this.setTool('placeItem'));
+                
+                // Toggle switches
+                document.getElementById('gridToggle').addEventListener('change', (e) => {
+                    this.state.showGrid = e.target.checked;
+                    this.render();
+                });
+                
+                document.getElementById('snapToggle').addEventListener('change', (e) => {
+                    this.state.snapToGrid = e.target.checked;
+                    this.render();
+                });
+                
+                // Control buttons
+                document.getElementById('newBtn').addEventListener('click', () => this.newDesign());
+                document.getElementById('clearBtn').addEventListener('click', () => this.clearCanvas());
+                document.getElementById('saveBtn').addEventListener('click', () => this.saveDesign());
+                document.getElementById('loadBtn').addEventListener('click', () => this.loadDesign());
+                document.getElementById('exportJsonBtn').addEventListener('click', () => this.exportJson());
+                document.getElementById('exportPngBtn').addEventListener('click', () => this.exportPng());
+                document.getElementById('undoBtn').addEventListener('click', () => this.undo());
+                document.getElementById('redoBtn').addEventListener('click', () => this.redo());
+                document.getElementById('instructionsBtn').addEventListener('click', () => this.showInstructions());
+                
+                // Category tabs
+                const categoryTabs = document.querySelectorAll('.category-tab');
+                categoryTabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        const category = tab.getAttribute('data-category');
+                        this.setCategory(category);
+                    });
+                });
+                
+                // Item palette drag events
+                const items = document.querySelectorAll('.item');
+                items.forEach(item => {
+                    item.addEventListener('mousedown', (e) => {
+                        this.state.currentItemType = item.getAttribute('data-type');
+                        this.setTool('placeItem');
+                        this.updateStatus(`Ready to place ${this.state.currentItemType}`);
+                    });
+                });
+                
+                // Instructions modal
+                document.getElementById('instructionsModal').addEventListener('click', (e) => {
+                    if (e.target.classList.contains('modal') || e.target.classList.contains('close-modal')) {
+                        this.hideInstructions();
+                    }
+                });
+            }
+            
+            // Set the current category and update UI
+            setCategory(category) {
+                this.state.currentCategory = category;
+                
+                // Update UI
+                document.querySelectorAll('.category-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                document.querySelector(`.category-tab[data-category="${category}"]`).classList.add('active');
+                
+                // Show/hide items based on category
+                const items = document.querySelectorAll('.item');
+                items.forEach(item => {
+                    if (item.getAttribute('data-category') === category) {
+                        item.style.display = 'flex';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+                
+                this.updateStatus(`Viewing ${category} items`);
+            }
+            
+            // Handle mouse down events on the canvas
+            handleMouseDown(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Snap to grid if enabled
+                const snappedX = this.state.snapToGrid ? this.snapToGrid(x) : x;
+                const snappedY = this.state.snapToGrid ? this.snapToGrid(y) : y;
+                
+                switch (this.state.tool) {
+                    case 'select':
+                        this.handleSelectMouseDown(snappedX, snappedY);
+                        break;
+                    case 'wall':
+                        this.handleWallMouseDown(snappedX, snappedY);
+                        break;
+                    case 'rotate':
+                        this.handleRotateMouseDown(snappedX, snappedY);
+                        break;
+                    case 'placeItem':
+                        this.handlePlaceItemMouseDown(snappedX, snappedY);
+                        break;
+                }
+                
+                this.render();
+            }
+            
+            // Handle mouse move events on the canvas
+            handleMouseMove(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Snap to grid if enabled
+                const snappedX = this.state.snapToGrid ? this.snapToGrid(x) : x;
+                const snappedY = this.state.snapToGrid ? this.snapToGrid(y) : y;
+                
+                switch (this.state.tool) {
+                    case 'select':
+                        this.handleSelectMouseMove(snappedX, snappedY);
+                        break;
+                    case 'wall':
+                        this.handleWallMouseMove(snappedX, snappedY);
+                        break;
+                    case 'rotate':
+                        this.handleRotateMouseMove(snappedX, snappedY);
+                        break;
+                    case 'placeItem':
+                        // Update cursor position for item placement preview
+                        this.state.dragStart.x = snappedX;
+                        this.state.dragStart.y = snappedY;
+                        break;
+                }
+                
+                this.render();
+            }
+            
+            // Handle mouse up events on the canvas
+            handleMouseUp(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Snap to grid if enabled
+                const snappedX = this.state.snapToGrid ? this.snapToGrid(x) : x;
+                const snappedY = this.state.snapToGrid ? this.snapToGrid(y) : y;
+                
+                switch (this.state.tool) {
+                    case 'select':
+                        this.handleSelectMouseUp(snappedX, snappedY);
+                        break;
+                    case 'wall':
+                        this.handleWallMouseUp(snappedX, snappedY);
+                        break;
+                    case 'rotate':
+                        this.handleRotateMouseUp(snappedX, snappedY);
+                        break;
+                    case 'placeItem':
+                        // Item placement is handled on mouse down
+                        break;
+                }
+                
+                this.state.isDragging = false;
+                this.state.isDrawingWall = false;
+                this.render();
+            }
+            
+            // Handle select tool mouse down
+            handleSelectMouseDown(x, y) {
+                // Check if clicking on an item
+                const item = this.getItemAt(x, y);
+                if (item) {
+                    this.state.selectedItem = item;
+                    this.state.isDragging = true;
+                    this.state.dragStart.x = x - item.x;
+                    this.state.dragStart.y = y - item.y;
+                    this.updateStatus(`Selected ${item.type}`);
+                } else {
+                    this.state.selectedItem = null;
+                    this.updateStatus('Ready');
+                }
+            }
+            
+            // Handle select tool mouse move
+            handleSelectMouseMove(x, y) {
+                if (this.state.isDragging && this.state.selectedItem) {
+                    // Move the selected item
+                    const newX = x - this.state.dragStart.x;
+                    const newY = y - this.state.dragStart.y;
+                    
+                    // Check for collisions with walls
+                    if (!this.checkCollision(this.state.selectedItem, newX, newY)) {
+                        this.state.selectedItem.x = newX;
+                        this.state.selectedItem.y = newY;
+                        this.updateStatus(`Moving ${this.state.selectedItem.type}`);
+                    }
+                }
+            }
+            
+            // Handle select tool mouse up
+            handleSelectMouseUp(x, y) {
+                if (this.state.isDragging && this.state.selectedItem) {
+                    this.saveToHistory();
+                    this.updateStatus(`${this.state.selectedItem.type} moved`);
+                }
+            }
+            
+            // Handle wall tool mouse down
+            handleWallMouseDown(x, y) {
+                this.state.isDrawingWall = true;
+                this.state.wallStart.x = x;
+                this.state.wallStart.y = y;
+                this.updateStatus('Drawing wall - drag to create segment');
+            }
+            
+            // Handle wall tool mouse move
+            handleWallMouseMove(x, y) {
+                if (this.state.isDrawingWall) {
+                    // Preview the wall being drawn
+                    this.state.dragStart.x = x;
+                    this.state.dragStart.y = y;
+                }
+            }
+            
+            // Handle wall tool mouse up
+            handleWallMouseUp(x, y) {
+                if (this.state.isDrawingWall) {
+                    // Create a new wall segment
+                    const wall = {
+                        x1: this.state.wallStart.x,
+                        y1: this.state.wallStart.y,
+                        x2: x,
+                        y2: y
+                    };
+                    
+                    this.state.walls.push(wall);
+                    this.saveToHistory();
+                    this.updateStatus('Wall segment added');
+                }
+            }
+            
+            // Handle rotate tool mouse down
+            handleRotateMouseDown(x, y) {
+                // Check if clicking on an item
+                const item = this.getItemAt(x, y);
+                if (item) {
+                    this.state.selectedItem = item;
+                    this.state.isDragging = true;
+                    this.updateStatus(`Rotating ${item.type}`);
+                } else {
+                    this.state.selectedItem = null;
+                    this.updateStatus('Ready');
+                }
+            }
+            
+            // Handle rotate tool mouse move
+            handleRotateMouseMove(x, y) {
+                if (this.state.isDragging && this.state.selectedItem) {
+                    // Calculate rotation based on mouse position relative to item center
+                    const centerX = this.state.selectedItem.x + this.state.selectedItem.width / 2;
+                    const centerY = this.state.selectedItem.y + this.state.selectedItem.height / 2;
+                    
+                    const deltaX = x - centerX;
+                    const deltaY = y - centerY;
+                    
+                    // Calculate angle in radians, then convert to degrees
+                    let angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+                    
+                    // Normalize to 0-360 range
+                    if (angle < 0) angle += 360;
+                    
+                    // Snap to 45-degree increments if snap to grid is enabled
+                    if (this.state.snapToGrid) {
+                        angle = Math.round(angle / 45) * 45;
+                    }
+                    
+                    this.state.selectedItem.rotation = angle;
+                }
+            }
+            
+            // Handle rotate tool mouse up
+            handleRotateMouseUp(x, y) {
+                if (this.state.isDragging && this.state.selectedItem) {
+                    this.saveToHistory();
+                    this.updateStatus(`${this.state.selectedItem.type} rotated`);
+                }
+            }
+            
+            // Handle place item tool mouse down
+            handlePlaceItemMouseDown(x, y) {
+                if (this.state.currentItemType) {
+                    // Create a new item
+                    const item = this.createItem(this.state.currentItemType, x, y);
+                    
+                    // Check for collisions with walls
+                    if (!this.checkCollision(item, x, y)) {
+                        this.state.items.push(item);
+                        this.state.selectedItem = item;
+                        this.saveToHistory();
+                        this.updateStatus(`${this.state.currentItemType} placed`);
+                    } else {
+                        this.updateStatus('Cannot place item here - collision detected');
+                    }
+                }
+            }
+            
+            // Handle keyboard events
+            handleKeyDown(e) {
+                // Delete selected item
+                if ((e.key === 'Delete' || e.key === 'Backspace') && this.state.selectedItem) {
+                    this.deleteSelectedItem();
+                }
+                
+                // Rotate selected item with R key
+                if (e.key === 'r' || e.key === 'R') {
+                    this.rotateSelectedItem();
+                }
+                
+                // Undo/redo with Ctrl+Z/Ctrl+Y
+                if (e.ctrlKey) {
+                    if (e.key === 'z') {
+                        e.preventDefault();
+                        this.undo();
+                    } else if (e.key === 'y') {
+                        e.preventDefault();
+                        this.redo();
+                    }
+                }
+            }
+            
+            // Set the current tool
+            setTool(tool) {
+                this.state.tool = tool;
+                
+                // Update UI
+                document.querySelectorAll('.tool-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.getElementById(`${tool}Tool`).classList.add('active');
+                
+                // Update status
+                document.getElementById('currentTool').textContent = 
+                    tool.charAt(0).toUpperCase() + tool.slice(1).replace(/([A-Z])/g, ' $1');
+                
+                this.updateStatus(`Tool set to ${tool}`);
+                this.render();
+            }
+            
+            // Create a new item of the specified type
+            createItem(type, x, y) {
+                const baseSize = this.state.gridSize * 2;
+                
+                // Define item properties based on type
+                const itemProps = {
+                    // Furniture
+                    chair: { width: baseSize, height: baseSize, color: '#8e44ad' },
+                    table: { width: baseSize * 2, height: baseSize * 2, color: '#d35400' },
+                    sofa: { width: baseSize * 3, height: baseSize, color: '#16a085' },
+                    bed: { width: baseSize * 3, height: baseSize * 2, color: '#2980b9' },
+                    door: { width: baseSize / 2, height: baseSize * 2, color: '#7f8c8d' },
+                    window: { width: baseSize * 2, height: baseSize / 2, color: '#bdc3c7' },
+                    plant: { width: baseSize, height: baseSize, color: '#27ae60' },
+                    bookshelf: { width: baseSize * 2, height: baseSize * 3, color: '#8B4513' },
+                    desk: { width: baseSize * 3, height: baseSize * 2, color: '#A0522D' },
+                    
+                    // Kitchen
+                    stove: { width: baseSize * 2, height: baseSize * 1.5, color: '#333' },
+                    refrigerator: { width: baseSize * 2, height: baseSize * 3, color: '#ddd' },
+                    sink: { width: baseSize * 2, height: baseSize, color: '#ccc' },
+                    oven: { width: baseSize * 1.5, height: baseSize * 2, color: '#555' },
+                    microwave: { width: baseSize, height: baseSize, color: '#aaa' },
+                    dishwasher: { width: baseSize * 1.5, height: baseSize * 2, color: '#eee' },
+                    cabinet: { width: baseSize * 2, height: baseSize * 2, color: '#8B4513' },
+                    counter: { width: baseSize * 3, height: baseSize, color: '#CD853F' },
+                    toaster: { width: baseSize, height: baseSize * 0.75, color: '#ccc' },
+                    blender: { width: baseSize * 0.75, height: baseSize * 1.5, color: '#555' },
+                    
+                    // Restaurant
+                    bar: { width: baseSize * 4, height: baseSize, color: '#8B4513' },
+                    barstool: { width: baseSize, height: baseSize * 1.5, color: '#8e44ad' },
+                    cashregister: { width: baseSize * 1.5, height: baseSize, color: '#333' },
+                    hoststand: { width: baseSize, height: baseSize * 2, color: '#8B4513' },
+                    waitstation: { width: baseSize * 2, height: baseSize * 1.5, color: '#ccc' },
+                    commercialfridge: { width: baseSize * 2.5, height: baseSize * 3, color: '#ddd' },
+                    grill: { width: baseSize * 2, height: baseSize * 1.5, color: '#333' },
+                    fryer: { width: baseSize * 1.5, height: baseSize, color: '#555' },
+                    prepstation: { width: baseSize * 2, height: baseSize * 1.5, color: '#CD853F' },
+                    displaycase: { width: baseSize * 2, height: baseSize * 2, color: '#e6f2ff' }
+                };
+                
+                const props = itemProps[type] || { width: baseSize, height: baseSize, color: '#95a5a6' };
+                
+                return {
+                    type,
+                    x,
+                    y,
+                    width: props.width,
+                    height: props.height,
+                    color: props.color,
+                    rotation: 0,
+                    id: Date.now() + Math.random() // Simple unique ID
+                };
+            }
+            
+            // Get item at specified coordinates
+            getItemAt(x, y) {
+                // Check items in reverse order (top-most first)
+                for (let i = this.state.items.length - 1; i >= 0; i--) {
+                    const item = this.state.items[i];
+                    
+                    // Simple point-in-rectangle check (ignoring rotation for selection)
+                    if (x >= item.x && x <= item.x + item.width &&
+                        y >= item.y && y <= item.y + item.height) {
+                        return item;
+                    }
+                }
+                
+                return null;
+            }
+            
+            // Check if an item would collide with walls at the specified position
+            checkCollision(item, x, y) {
+                const itemRect = {
+                    x1: x,
+                    y1: y,
+                    x2: x + item.width,
+                    y2: y + item.height
+                };
+                
+                // Check against all walls
+                for (const wall of this.state.walls) {
+                    const wallRect = {
+                        x1: Math.min(wall.x1, wall.x2),
+                        y1: Math.min(wall.y1, wall.y2),
+                        x2: Math.max(wall.x1, wall.x2),
+                        y2: Math.max(wall.y1, wall.y2)
+                    };
+                    
+                    // Simple rectangle intersection check
+                    if (itemRect.x1 < wallRect.x2 &&
+                        itemRect.x2 > wallRect.x1 &&
+                        itemRect.y1 < wallRect.y2 &&
+                        itemRect.y2 > wallRect.y1) {
+                        return true; // Collision detected
+                    }
+                }
+                
+                return false; // No collision
+            }
+            
+            // Snap a coordinate to the grid
+            snapToGrid(coord) {
+                return Math.round(coord / this.state.gridSize) * this.state.gridSize;
+            }
+            
+            // Delete the currently selected item
+            deleteSelectedItem() {
+                if (this.state.selectedItem) {
+                    const index = this.state.items.indexOf(this.state.selectedItem);
+                    if (index !== -1) {
+                        this.state.items.splice(index, 1);
+                        this.state.selectedItem = null;
+                        this.saveToHistory();
+                        this.updateStatus('Item deleted');
+                        this.render();
+                    }
+                }
+            }
+            
+            // Rotate the selected item by 45 degrees
+            rotateSelectedItem() {
+                if (this.state.selectedItem) {
+                    this.state.selectedItem.rotation += 45;
+                    if (this.state.selectedItem.rotation >= 360) {
+                        this.state.selectedItem.rotation -= 360;
+                    }
+                    this.saveToHistory();
+                    this.updateStatus(`${this.state.selectedItem.type} rotated`);
+                    this.render();
+                }
+            }
+            
+            // Save current state to history for undo/redo
+            saveToHistory() {
+                // Remove any future states if we're not at the end of history
+                if (this.state.historyIndex < this.state.history.length - 1) {
+                    this.state.history = this.state.history.slice(0, this.state.historyIndex + 1);
+                }
+                
+                // Save current state (deep copy)
+                const stateCopy = {
+                    items: JSON.parse(JSON.stringify(this.state.items)),
+                    walls: JSON.parse(JSON.stringify(this.state.walls)),
+                    selectedItem: this.state.selectedItem ? 
+                        this.state.items.find(item => item.id === this.state.selectedItem.id) : null
+                };
+                
+                this.state.history.push(stateCopy);
+                
+                // Limit history size
+                if (this.state.history.length > 5) {
+                    this.state.history.shift();
+                }
+                
+                this.state.historyIndex = this.state.history.length - 1;
+                
+                // Update undo/redo button states
+                this.updateUndoRedoButtons();
+            }
+            
+            // Undo the last action
+            undo() {
+                if (this.state.historyIndex > 0) {
+                    this.state.historyIndex--;
+                    this.restoreFromHistory();
+                    this.updateStatus('Undo completed');
+                } else {
+                    this.updateStatus('Nothing to undo');
+                }
+            }
+            
+            // Redo the previously undone action
+            redo() {
+                if (this.state.historyIndex < this.state.history.length - 1) {
+                    this.state.historyIndex++;
+                    this.restoreFromHistory();
+                    this.updateStatus('Redo completed');
+                } else {
+                    this.updateStatus('Nothing to redo');
+                }
+            }
+            
+            // Restore state from history
+            restoreFromHistory() {
+                const historyState = this.state.history[this.state.historyIndex];
+                
+                this.state.items = JSON.parse(JSON.stringify(historyState.items));
+                this.state.walls = JSON.parse(JSON.stringify(historyState.walls));
+                this.state.selectedItem = historyState.selectedItem ? 
+                    this.state.items.find(item => item.id === historyState.selectedItem.id) : null;
+                
+                this.updateUndoRedoButtons();
+                this.render();
+            }
+            
+            // Update undo/redo button states based on history
+            updateUndoRedoButtons() {
+                document.getElementById('undoBtn').disabled = this.state.historyIndex <= 0;
+                document.getElementById('redoBtn').disabled = this.state.historyIndex >= this.state.history.length - 1;
+            }
+            
+            // Create a new design
+            newDesign() {
+                if (confirm('Are you sure you want to create a new design? Any unsaved changes will be lost.')) {
+                    this.state.items = [];
+                    this.state.walls = [];
+                    this.state.selectedItem = null;
+                    this.state.history = [];
+                    this.state.historyIndex = -1;
+                    this.updateUndoRedoButtons();
+                    this.updateStatus('New design created');
+                    this.render();
+                }
+            }
+            
+            // Clear the canvas
+            clearCanvas() {
+                if (confirm('Are you sure you want to clear the canvas?')) {
+                    this.state.items = [];
+                    this.state.walls = [];
+                    this.state.selectedItem = null;
+                    this.saveToHistory();
+                    this.updateStatus('Canvas cleared');
+                    this.render();
+                }
+            }
+            
+            // Save design to localStorage
+            saveDesign() {
+                const design = {
+                    items: this.state.items,
+                    walls: this.state.walls,
+                    timestamp: new Date().toISOString()
+                };
+                
+                localStorage.setItem('floorPlanDesign', JSON.stringify(design));
+                this.updateStatus('Design saved to browser storage');
+            }
+            
+            // Load design from localStorage
+            loadDesign() {
+                const saved = localStorage.getItem('floorPlanDesign');
+                if (saved) {
+                    try {
+                        const design = JSON.parse(saved);
+                        this.state.items = design.items || [];
+                        this.state.walls = design.walls || [];
+                        this.state.selectedItem = null;
+                        this.saveToHistory();
+                        this.updateStatus('Design loaded from browser storage');
+                        this.render();
+                    } catch (e) {
+                        this.updateStatus('Error loading design: ' + e.message);
+                    }
+                } else {
+                    this.updateStatus('No saved design found');
+                }
+            }
+            
+            // Export design as JSON
+            exportJson() {
+                const design = {
+                    items: this.state.items,
+                    walls: this.state.walls,
+                    timestamp: new Date().toISOString()
+                };
+                
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(design, null, 2));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", "floor_plan.json");
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+                
+                this.updateStatus('Design exported as JSON');
+            }
+            
+            // Export canvas as PNG
+            exportPng() {
+                const dataURL = this.canvas.toDataURL('image/png');
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataURL);
+                downloadAnchorNode.setAttribute("download", "floor_plan.png");
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+                
+                this.updateStatus('Design exported as PNG');
+            }
+            
+            // Show instructions modal
+            showInstructions() {
+                document.getElementById('instructionsModal').style.display = 'flex';
+            }
+            
+            // Hide instructions modal
+            hideInstructions() {
+                document.getElementById('instructionsModal').style.display = 'none';
+            }
+            
+            // Update status message
+            updateStatus(message) {
+                document.getElementById('status').textContent = message;
+            }
+            
+            // Main render function
+            render() {
+                // Clear canvas
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw grid if enabled
+                if (this.state.showGrid) {
+                    this.drawGrid();
+                }
+                
+                // Draw walls
+                this.drawWalls();
+                
+                // Draw items
+                this.drawItems();
+                
+                // Draw selection and handles if an item is selected
+                if (this.state.selectedItem) {
+                    this.drawSelection();
+                }
+                
+                // Draw wall preview if drawing
+                if (this.state.isDrawingWall) {
+                    this.drawWallPreview();
+                }
+                
+                // Draw item placement preview if in place item mode
+                if (this.state.tool === 'placeItem' && this.state.currentItemType) {
+                    this.drawItemPreview();
+                }
+            }
+            
+            // Draw the grid
+            drawGrid() {
+                this.ctx.strokeStyle = '#e0e0e0';
+                this.ctx.lineWidth = 0.5;
+                
+                for (let x = 0; x <= this.canvas.width; x += this.state.gridSize) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, this.canvas.height);
+                    this.ctx.stroke();
+                }
+                
+                for (let y = 0; y <= this.canvas.height; y += this.state.gridSize) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, y);
+                    this.ctx.lineTo(this.canvas.width, y);
+                    this.ctx.stroke();
+                }
+            }
+            
+            // Draw all walls
+            drawWalls() {
+                this.ctx.strokeStyle = '#2c3e50';
+                this.ctx.lineWidth = 3;
+                
+                for (const wall of this.state.walls) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(wall.x1, wall.y1);
+                    this.ctx.lineTo(wall.x2, wall.y2);
+                    this.ctx.stroke();
+                }
+            }
+            
+            // Draw all items
+            drawItems() {
+                for (const item of this.state.items) {
+                    this.drawItem(item);
+                }
+            }
+            
+            // Draw a single item
+            drawItem(item) {
+                this.ctx.save();
+                
+                // Move to item center for rotation
+                const centerX = item.x + item.width / 2;
+                const centerY = item.y + item.height / 2;
+                this.ctx.translate(centerX, centerY);
+                this.ctx.rotate(item.rotation * Math.PI / 180);
+                
+                // Draw item body
+                this.ctx.fillStyle = item.color;
+                this.ctx.fillRect(-item.width / 2, -item.height / 2, item.width, item.height);
+                
+                // Draw item border
+                this.ctx.strokeStyle = '#2c3e50';
+                this.ctx.lineWidth = 1;
+                this.ctx.strokeRect(-item.width / 2, -item.height / 2, item.width, item.height);
+                
+                // Draw item type indicator (simple text or icon)
+                this.ctx.fillStyle = 'white';
+                this.ctx.font = '10px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText(item.type.charAt(0).toUpperCase(), 0, 0);
+                
+                this.ctx.restore();
+            }
+            
+            // Draw selection highlight and handles for selected item
+            drawSelection() {
+                const item = this.state.selectedItem;
+                
+                this.ctx.save();
+                
+                // Move to item center for rotation
+                const centerX = item.x + item.width / 2;
+                const centerY = item.y + item.height / 2;
+                this.ctx.translate(centerX, centerY);
+                this.ctx.rotate(item.rotation * Math.PI / 180);
+                
+                // Draw selection border
+                this.ctx.strokeStyle = '#3498db';
+                this.ctx.lineWidth = 2;
+                this.ctx.setLineDash([5, 5]);
+                this.ctx.strokeRect(-item.width / 2, -item.height / 2, item.width, item.height);
+                this.ctx.setLineDash([]);
+                
+                // Draw resize handles (corners)
+                const handleSize = 6;
+                const halfWidth = item.width / 2;
+                const halfHeight = item.height / 2;
+                
+                this.ctx.fillStyle = '#3498db';
+                
+                // Top-left
+                this.ctx.fillRect(-halfWidth - handleSize/2, -halfHeight - handleSize/2, handleSize, handleSize);
+                
+                // Top-right
+                this.ctx.fillRect(halfWidth - handleSize/2, -halfHeight - handleSize/2, handleSize, handleSize);
+                
+                // Bottom-left
+                this.ctx.fillRect(-halfWidth - handleSize/2, halfHeight - handleSize/2, handleSize, handleSize);
+                
+                // Bottom-right
+                this.ctx.fillRect(halfWidth - handleSize/2, halfHeight - handleSize/2, handleSize, handleSize);
+                
+                // Draw rotate handle (above the item)
+                if (this.state.tool === 'rotate') {
+                    this.ctx.fillStyle = '#e74c3c';
+                    this.ctx.fillRect(-handleSize/2, -halfHeight - 20 - handleSize/2, handleSize, handleSize);
+                }
+                
+                this.ctx.restore();
+            }
+            
+            // Draw wall preview while drawing
+            drawWallPreview() {
+                this.ctx.strokeStyle = '#3498db';
+                this.ctx.lineWidth = 2;
+                this.ctx.setLineDash([5, 5]);
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.state.wallStart.x, this.state.wallStart.y);
+                this.ctx.lineTo(this.state.dragStart.x, this.state.dragStart.y);
+                this.ctx.stroke();
+                
+                this.ctx.setLineDash([]);
+            }
+            
+            // Draw item placement preview
+            drawItemPreview() {
+                const item = this.createItem(this.state.currentItemType, this.state.dragStart.x, this.state.dragStart.y);
+                
+                this.ctx.save();
+                
+                // Draw with transparency to indicate preview
+                this.ctx.globalAlpha = 0.7;
+                this.drawItem(item);
+                
+                this.ctx.restore();
+            }
+        }
+
+        // Initialize the application when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new FloorPlanDesigner();
+        });
+    </script>
+</body>
+</html>
